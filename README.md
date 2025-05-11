@@ -66,7 +66,7 @@ yield event.chain_result(chain)
                             }
                         ]
                     }
-                    await client.api.call_action('send_group_msg', **payloads2)  # 调用 协议端
+                    await client.api.call_action('send_group_msg', **payloads2) 
 ```
 现在应该可以正常使用了。
 
