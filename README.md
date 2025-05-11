@@ -22,4 +22,51 @@
 ### 注意：
 由于本插件的原理是把图片以文件的形式发送，因此尽量私聊使用，否则会产生很多的群文件，导致群里面有用的群文件被淹没。
 
+## 更新日志
+-2025/5/11:
+修复了较新版本的astrbot无法正常使用的问题，推测原因是以下代码导致的：
+```angular2html
+chain = [
+    File(file=file_url, name=filename) 
+    ] 
+yield event.chain_result(chain)
+```
+修改为了直接调用NapCat的Api来发送文件，具体代码如下：
+```angular2html
+                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+                assert isinstance(event, AiocqhttpMessageEvent)
+                if event.get_message_type() == MessageType.FRIEND_MESSAGE:
+                    user_id = event.get_sender_id()
+                    client = event.bot
+                    payloads2 = {
+                        "user_id": user_id,
+                        "message": [
+                            {
+                                "type": "file",
+                                "data": {
+                                    "file": file_url,
+                                    "name": filename
+                                }
+                            }
+                        ]
+                    }
+                    await client.api.call_action('send_private_msg', **payloads2)  # 调用 协议端  API
+                if event.get_message_type() == MessageType.GROUP_MESSAGE:
+                    group_id = event.get_group_id()
+                    client = event.bot
+                    payloads2 = {
+                        "group_id": group_id,
+                        "message": [
+                            {
+                                "type": "file",
+                                "data": {
+                                    "file": file_url,
+                                    "name": filename
+                                }
+                            }
+                        ]
+                    }
+                    await client.api.call_action('send_group_msg', **payloads2)  # 调用 协议端
+```
+
 
