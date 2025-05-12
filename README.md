@@ -70,4 +70,10 @@ yield event.chain_result(chain)
 ```
 现在应该可以正常使用了。
 
+在astrbot的v3.5.9版本中，astrbot团队修复了以下问题：
+```angular2html
+修复: 单独发送文件时被认为是空消息导致文件无法发送的问题 @Soulter
+```
+现在旧版的代码在新版astrbot中应该也能正常运行了。  
+
 
