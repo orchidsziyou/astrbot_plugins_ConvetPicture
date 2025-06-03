@@ -77,3 +77,7 @@ yield event.chain_result(chain)
 现在旧版的代码在新版astrbot中应该也能正常运行了。  
 
 
+2025/6/3:
+新增：可以转换qq官方表情包（就是需要订阅下载使用的那些），使用aiohttp下载到本地之后以图片发出
+
+
