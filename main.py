@@ -7,6 +7,7 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.core.message.components import Image
 from astrbot.core.platform import MessageType
+from astrbot.core.provider.entities import ProviderRequest, LLMResponse
 
 
 async def download_image(picture_url, relative_path):
@@ -32,6 +33,7 @@ class MyPlugin(Star):
     @filter.command("转换")
     async def convert_command(self, event: AstrMessageEvent):
         '''这是一个 转换图片格式 指令'''
+        event.should_call_llm(False)
         message_chain = event.get_messages()
         # logger.info(message_chain)
         # print(message_chain)
@@ -97,6 +99,8 @@ class MyPlugin(Star):
                         ]
                     }
                     await client.api.call_action('send_group_msg', **payloads2)  # 调用 协议端
+                    event.stop_event()
+                    return
             elif msg.type == 'Reply':
                 # print(msg)
                 # 处理回复消息
@@ -165,7 +169,7 @@ class MyPlugin(Star):
                                 # yield event.chain_result(chain)
                             else:
                                 yield event.plain_result("图片下载失败")
-
+                            event.stop_event()
                             return
                         from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import \
                             AiocqhttpMessageEvent
@@ -225,4 +229,18 @@ class MyPlugin(Star):
                                 ]
                             }
                             await client.api.call_action('send_group_msg', **payloads2)  # 调用 协议端
+                            event.stop_event()
+                            return
 
+
+    @filter.on_llm_request()
+    async def on_llm_request(self, event: AstrMessageEvent, req: ProviderRequest):
+        '''处理来自 LLM 的请求'''
+        event.stop_event()
+        return None
+
+    @filter.on_llm_response()
+    async def on_llm_response(self, event: AstrMessageEvent, resp: LLMResponse):
+        '''处理来自 LLM 的响应'''
+        event.stop_event()
+        return None
