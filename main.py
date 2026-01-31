@@ -167,17 +167,17 @@ class MyPlugin(Star):
                 # print(response)
                 localdiskpath = response['file']
 
-                abs_history_json_path = os.path.abspath(localdiskpath)
-                print(abs_history_json_path)
-                file_url = f'file://{abs_history_json_path}'
+                abs_pic_path = os.path.abspath(localdiskpath)
+                print(abs_pic_path)
+                file_url = f'file://{abs_pic_path}'
 
                 filename = ""
 
-                if abs_history_json_path.endswith(".jpg"):
+                if abs_pic_path.endswith(".jpg"):
                     filename = "图片.jpg"
-                if abs_history_json_path.endswith(".png"):
+                if abs_pic_path.endswith(".png"):
                     filename = "图片.png"
-                if abs_history_json_path.endswith(".gif"):
+                if abs_pic_path.endswith(".gif"):
                     filename = "图片.gif"
 
                 from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
@@ -297,17 +297,17 @@ class MyPlugin(Star):
                         response = await client.api.call_action('get_image', **payloads2)  # 调用 协议端  API
                         localdiskpath = response['file']
 
-                        abs_history_json_path = os.path.abspath(localdiskpath)
-                        print(abs_history_json_path)
-                        file_url = f'file://{abs_history_json_path}'
+                        abs_pic_path = os.path.abspath(localdiskpath)
+                        print(abs_pic_path)
+                        file_url = f'file://{abs_pic_path}'
 
                         filename = ""
 
-                        if abs_history_json_path.endswith(".jpg"):
+                        if abs_pic_path.endswith(".jpg"):
                             filename = "图片.jpg"
-                        if abs_history_json_path.endswith(".png"):
+                        if abs_pic_path.endswith(".png"):
                             filename = "图片.png"
-                        if abs_history_json_path.endswith(".gif"):
+                        if abs_pic_path.endswith(".gif"):
                             filename = "图片.gif"
 
                         from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import \
@@ -403,5 +403,102 @@ class MyPlugin(Star):
             else:
                 yield event.plain_result("该群组未添加")
                 return
+
+    @filter.command("rename")
+    async def test(self, event: AstrMessageEvent, thumb: str):
+        # 获取回复的图片地址
+        message_chain = event.get_messages()
+        # 判断是否查询到图片的mark
+        mark = False
+
+        if thumb == "":
+            yield event.plain_result("请输入要外显示的内容")
+            return
+
+        for msg in message_chain:
+            if msg.type == 'Reply':
+                # 处理回复消息
+                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+                assert isinstance(event, AiocqhttpMessageEvent)
+                client = event.bot
+                payload = {
+                    "message_id": msg.id
+                }
+                response = await client.api.call_action('get_msg', **payload)  # 调用 协议端  API
+                reply_msg = response['message']
+                # print(reply_msg)
+
+                for msg in reply_msg:
+                    # print(msg)
+                    if msg['type'] == 'image':
+                        # 官方表情没办法保存
+                        picture_url = msg['data']['url']
+                        # print(picture_url)
+                        if "/club/item/" in picture_url:
+                            yield event.plain_result("跳过qq官方表情")
+                            return
+
+                        from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import \
+                            AiocqhttpMessageEvent
+                        assert isinstance(event, AiocqhttpMessageEvent)
+                        client = event.bot
+                        payloads2 = {
+                            "file_id": msg['data']['file']
+                        }
+                        response = await client.api.call_action('get_image', **payloads2)  # 调用 协议端  API
+                        localdiskpath = response['file']
+
+                        # 开始修改图片外显
+
+                        from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import \
+                            AiocqhttpMessageEvent
+                        assert isinstance(event, AiocqhttpMessageEvent)
+                        client = event.bot
+
+                        # 判断私聊还是群聊
+                        payloads2 = {}
+                        outer_thumb = "[" + thumb + "]"
+                        if event.get_message_type() == MessageType.FRIEND_MESSAGE:
+                            payloads2 = {
+                                "user_id": 0,
+                                "message": [
+                                    {
+                                        "type": "image",
+                                        "data": {
+                                            "path": localdiskpath,
+                                            "thumb": outer_thumb,
+                                            "summary": outer_thumb,
+                                            "sub_type": 0
+                                        }
+                                    }
+                                ],
+                                "user_id": event.get_sender_id()
+                            }
+                            response = await client.api.call_action('send_private_msg', **payloads2)
+                            print(response)
+                            mark = True
+                        else:
+                            payloads2 = {
+                                "user_id": 0,
+                                "message": [
+                                    {
+                                        "type": "image",
+                                        "data": {
+                                            "path": localdiskpath,
+                                            "thumb": outer_thumb,
+                                            "summary": outer_thumb,
+                                            "sub_type": 0
+                                        }
+                                    }
+                                ],
+                                "group_id": event.get_group_id()
+                            }
+                            response = await client.api.call_action('send_group_msg', **payloads2)
+                            print(response)
+                            mark = True
+
+        if not mark:
+            yield event.plain_result("未找到图片")
+            return
 
 
